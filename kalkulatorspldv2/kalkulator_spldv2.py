@@ -1,177 +1,195 @@
 import streamlit as st
 
-def solve_spldv_substitusi_streamlit(a1, b1, c1, a2, b2, c2):
-    st.markdown("### Memulai Perhitungan")
-    st.info(f"Persamaan 1: **{a1}x + {b1}y = {c1}**")
-    st.info(f"Persamaan 2: **{a2}x + {b2}y = {c2}**")
-
+def solve_splvd_substitution(a1, b1, c1, a2, b2, c2, pilihan_persamaan_awal, pilihan_variabel_awal):
+    """
+    Melakukan perhitungan SPLDV dengan metode substitusi secara internal.
+    Fungsi ini dirancang untuk eksekusi non-interaktif setelah input dari Streamlit.
+    """
     st.markdown("---")
-    st.markdown("### Langkah 1: Ubah salah satu persamaan")
-    st.write("Kita akan mencoba mengubah Persamaan 1 untuk menyatakan `x` dalam bentuk `y`.")
+    st.subheader("💡 Langkah-langkah Penyelesaian (Metode Substitusi)")
+    
+    # Menampilkan persamaan
+    st.write(f"**Persamaan Anda:**")
+    st.latex(f"1) {a1}x + {b1}y = {c1}")
+    st.latex(f"2) {a2}x + {b2}y = {c2}")
 
-    substitute_var = ''
-    m_val = 0
-    c_val = 0
-
-    if a1 == 0:
-        st.warning("Koefisien A1 adalah 0. Tidak bisa menyatakan x dari Persamaan 1 dengan mudah.")
-        st.write("Mari kita coba menyatakan `y` dari Persamaan 1: $y = (c_1 - a_1x) / b_1$")
-        if b1 == 0:
-            st.error("Kedua koefisien A1 dan B1 adalah 0. Persamaan 1 tidak valid sebagai persamaan linear.")
-            st.error("Tidak dapat melanjutkan. Harap periksa input Anda.")
-            return None, None # Mengembalikan None jika tidak bisa dilanjutkan
-
-        substitute_var = 'y'
-        m_val = -a1 / b1
-        c_val = c1 / b1
-        st.code(f"y = ({c1} - {a1}x) / {b1}")
-        st.success(f"Jadi, y = {m_val:.2f}x + {c_val:.2f}")
-
+    # Langkah 1: Isolasi Variabel
+    st.markdown("---")
+    st.markdown("#### 1. Mengisolasi Variabel")
+    
+    if pilihan_persamaan_awal == 1:
+        a, b, c = a1, b1, c1
+        nama_persamaan_isolasi = "Persamaan 1"
+        persamaan_target_substitusi_idx = 2
+        target_a, target_b, target_c = a2, b2, c2
+        nama_target_persamaan = "Persamaan 2"
     else:
-        substitute_var = 'x'
-        m_val = -b1 / a1
-        c_val = c1 / a1
-        st.code(f"x = ({c1} - {b1}y) / {a1}")
-        st.success(f"Jadi, x = {m_val:.2f}y + {c_val:.2f}")
+        a, b, c = a2, b2, c2
+        nama_persamaan_isolasi = "Persamaan 2"
+        persamaan_target_substitusi_idx = 1
+        target_a, target_b, target_c = a1, b1, c1
+        nama_target_persamaan = "Persamaan 1"
 
+    ekspresi_isolasi = None
+    diisolasi_variabel = pilihan_variabel_awal
+
+    if pilihan_variabel_awal == 'x':
+        if a == 0:
+            st.error(f"Koefisien x di {nama_persamaan_isolasi} adalah 0. Tidak bisa mengisolasi x dari persamaan ini.")
+            return None, None
+        ekspresi_isolasi_str = f"x = \\frac{{{c} - {b}y}}{{{a}}}"
+        st.write(f"Dari **{nama_persamaan_isolasi}**, kita isolasi **x**:")
+        st.latex(ekspresi_isolasi_str)
+        ekspresi_isolasi = (c, -b, a) # (konstanta, koefisien y, pembagi)
+    else: # pilihan_variabel_awal == 'y'
+        if b == 0:
+            st.error(f"Koefisien y di {nama_persamaan_isolasi} adalah 0. Tidak bisa mengisolasi y dari persamaan ini.")
+            return None, None
+        ekspresi_isolasi_str = f"y = \\frac{{{c} - {a}x}}{{{b}}}"
+        st.write(f"Dari **{nama_persamaan_isolasi}**, kita isolasi **y**:")
+        st.latex(ekspresi_isolasi_str)
+        ekspresi_isolasi = (c, -a, b) # (konstanta, koefisien x, pembagi)
+
+    if ekspresi_isolasi is None:
+        return None, None
+
+    # Langkah 2: Substitusikan Ekspresi
     st.markdown("---")
-    st.markdown("### Langkah 2 & 3: Substitusi dan Selesaikan")
-    st.write(f"Sekarang, kita akan substitusikan ekspresi untuk **{substitute_var}** ke Persamaan 2.")
+    st.markdown("#### 2. Mensubstitusikan dan Menyederhanakan")
+    st.write(f"Sekarang kita substitusikan ekspresi untuk **'{diisolasi_variabel}'** ke dalam **{nama_target_persamaan}**:")
+    
+    konst_expr, koef_expr, pembagi_expr = ekspresi_isolasi
 
-    x_solution = None
-    y_solution = None
+    if diisolasi_variabel == 'x':
+        st.latex(f"{target_a} \\left(\\frac{{{konst_expr} - {koef_expr}y}}{{{pembagi_expr}}}\\right) + {target_b}y = {target_c}")
+        
+        # Simplifikasi
+        koef_y_baru = target_b * pembagi_expr - target_a * koef_expr
+        konst_baru = target_c * pembagi_expr - target_a * konst_expr
 
-    if substitute_var == 'x':
-        # Substitusi x = (c1 - b1*y) / a1 ke a2*x + b2*y = c2
-        # a2 * ((c1 - b1*y) / a1) + b2*y = c2
-        # y * (b2 - (a2*b1 / a1)) = c2 - (a2*c1 / a1)
-        denominator = (b2 * a1 - a2 * b1)
-        if abs(denominator) < 1e-9: # Mendekati nol untuk floating point
-            st.error("Determinan sistem mendekati nol. Sistem ini mungkin tidak memiliki solusi unik (sejajar atau berhimpit).")
+        st.write("Setelah disederhanakan, kita dapatkan persamaan dengan satu variabel:")
+        st.latex(f"{koef_y_baru}y = {konst_baru}")
+
+        if koef_y_baru == 0:
+            if konst_baru == 0:
+                st.info("Ini berarti ada **tak terhingga solusi** (garis berimpit).")
+            else:
+                st.info("Ini berarti **tidak ada solusi** (garis sejajar).")
             return None, None
+        else:
+            nilai_y = konst_baru / koef_y_baru
+            st.success(f"Maka, **y = {nilai_y:.4f}**")
+            
+            # Langkah 3: Substitusi Balik
+            st.markdown("---")
+            st.markdown("#### 3. Substitusi Balik untuk Menemukan Variabel Lain")
+            st.write(f"Substitusikan nilai **y = {nilai_y:.4f}** kembali ke ekspresi awal **x = \\frac{{{konst_expr} - {koef_expr}y}}{{{pembagi_expr}}}**")
+            
+            nilai_x = (konst_expr + koef_expr * nilai_y) / pembagi_expr
+            st.success(f"Didapatkan **x = {nilai_x:.4f}**")
+            return nilai_x, nilai_y
+    else: # diisolasi_variabel == 'y'
+        st.latex(f"{target_a}x + {target_b} \\left(\\frac{{{konst_expr} - {koef_expr}x}}{{{pembagi_expr}}}\\right) = {target_c}")
+        
+        # Simplifikasi
+        koef_x_baru = target_a * pembagi_expr - target_b * koef_expr
+        konst_baru = target_c * pembagi_expr - target_b * konst_expr
 
-        numerator_y = (c2 * a1 - a2 * c1)
-        y_solution = numerator_y / denominator
-        st.markdown(f"""
-        Setelah substitusi $x = \\frac{{{c1} - {b1}y}}{{{a1}}}$ ke persamaan 2:
-        $ {a2} \\left( \\frac{{{c1} - {b1}y}}{{{a1}}} \\right) + {b2}y = {c2} $
-        """)
-        st.code(f"y * ({b2} * {a1} - {a2} * {b1}) = ({c2} * {a1} - {a2} * {c1})")
-        st.code(f"y * ({denominator:.2f}) = ({numerator_y:.2f})")
-        st.success(f"Maka, **y = {y_solution:.2f}**")
-        x_solution = (c1 - b1 * y_solution) / a1
+        st.write("Setelah disederhanakan, kita dapatkan persamaan dengan satu variabel:")
+        st.latex(f"{koef_x_baru}x = {konst_baru}")
 
-    else: # substitute_var == 'y'
-        # Substitusi y = (c1 - a1*x) / b1 ke a2*x + b2*y = c2
-        # a2*x + b2 * ((c1 - a1*x) / b1) = c2
-        # x * (a2 - (b2*a1 / b1)) = c2 - (b2*c1 / b1)
-        denominator = (a2 * b1 - b2 * a1)
-        if abs(denominator) < 1e-9: # Mendekati nol untuk floating point
-            st.error("Determinan sistem mendekati nol. Sistem ini mungkin tidak memiliki solusi unik (sejajar atau berhimpit).")
+        if koef_x_baru == 0:
+            if konst_baru == 0:
+                st.info("Ini berarti ada **tak terhingga solusi** (garis berimpit).")
+            else:
+                st.info("Ini berarti **tidak ada solusi** (garis sejajar).")
             return None, None
+        else:
+            nilai_x = konst_baru / koef_x_baru
+            st.success(f"Maka, **x = {nilai_x:.4f}**")
 
-        numerator_x = (c2 * b1 - b2 * c1)
-        x_solution = numerator_x / denominator
-        st.markdown(f"""
-        Setelah substitusi $y = \\frac{{{c1} - {a1}x}}{{{b1}}}$ ke persamaan 2:
-        $ {a2}x + {b2} \\left( \\frac{{{c1} - {a1}x}}{{{b1}}} \\right) = {c2} $
-        """)
-        st.code(f"x * ({a2} * {b1} - {b2} * {a1}) = ({c2} * {b1} - {b2} * {c1})")
-        st.code(f"x * ({denominator:.2f}) = ({numerator_x:.2f})")
-        st.success(f"Maka, **x = {x_solution:.2f}**")
-        y_solution = (c1 - a1 * x_solution) / b1
+            # Langkah 3: Substitusi Balik
+            st.markdown("---")
+            st.markdown("#### 3. Substitusi Balik untuk Menemukan Variabel Lain")
+            st.write(f"Substitusikan nilai **x = {nilai_x:.4f}** kembali ke ekspresi awal **y = \\frac{{{konst_expr} - {koef_expr}x}}{{{pembagi_expr}}}**")
+            
+            nilai_y = (konst_expr + koef_expr * nilai_x) / pembagi_expr
+            st.success(f"Didapatkan **y = {nilai_y:.4f}**")
+            return nilai_x, nilai_y
 
-    st.markdown("---")
-    st.markdown("### Langkah 4: Substitusi Balik")
-    st.write(f"Setelah kita menemukan {'y' if substitute_var == 'x' else 'x'} = { (y_solution if substitute_var == 'x' else x_solution):.2f},")
-    st.write("kita akan substitusikan nilai ini kembali ke Persamaan 1 untuk menemukan nilai variabel yang tersisa.")
 
-    if substitute_var == 'x':
-        if abs(b1) < 1e-9:
-            st.error("Koefisien B1 adalah 0. Tidak dapat menemukan y dari Persamaan 1.")
-            return None, None
-        calculated_y = (c1 - (a1 * x_solution)) / b1
-        st.code(f"{a1} * {x_solution:.2f} + {b1}y = {c1}")
-        st.code(f"{a1 * x_solution:.2f} + {b1}y = {c1}")
-        st.code(f"{b1}y = {c1} - {a1 * x_solution:.2f}")
-        st.code(f"{b1}y = {c1 - (a1 * x_solution):.2f}")
-        st.code(f"y = {(c1 - (a1 * x_solution)):.2f} / {b1:.2f}")
-        st.success(f"Didapatkan **y = {calculated_y:.2f}**")
-        y_final = calculated_y
-        x_final = x_solution
-    else: # substitute_var == 'y'
-        if abs(a1) < 1e-9:
-            st.error("Koefisien A1 adalah 0. Tidak dapat menemukan x dari Persamaan 1.")
-            return None, None
-        calculated_x = (c1 - (b1 * y_solution)) / a1
-        st.code(f"{a1}x + {b1} * {y_solution:.2f} = {c1}")
-        st.code(f"{a1}x + {b1 * y_solution:.2f} = {c1}")
-        st.code(f"{a1}x = {c1} - {b1 * y_solution:.2f}")
-        st.code(f"{a1}x = {c1 - (b1 * y_solution):.2f}")
-        st.code(f"x = {(c1 - (b1 * y_solution)):.2f} / {a1:.2f}")
-        st.success(f"Didapatkan **x = {calculated_x:.2f}**")
-        x_final = calculated_x
-        y_final = y_solution
-
-    return x_final, y_final
-
-# --- Tampilan Antarmuka Streamlit ---
+# --- Tampilan Aplikasi Streamlit ---
 st.set_page_config(
-    page_title="Kalkulator SPLDV Substitusi",
+    page_title="Kalkulator SPLDV - Substitusi",
     page_icon="🔢",
     layout="centered",
     initial_sidebar_state="expanded"
 )
 
-st.title("🔢 Kalkulator SPLDV")
-st.subheader("Menyelesaikan Sistem Persamaan Linear Dua Variabel dengan Metode Substitusi")
-
+# Judul dan Deskripsi
+st.title("🔢 Kalkulator SPLDV Interaktif")
+st.markdown("---")
 st.markdown("""
-Aplikasi ini akan memandu Anda menyelesaikan SPLDV (Sistem Persamaan Linear Dua Variabel)
-menggunakan **Metode Substitusi** secara interaktif.
-Masukkan koefisien untuk kedua persamaan Anda dalam format:
-$Ax + By = C$
+    Selamat datang di **Kalkulator SPLDV** dengan **Metode Substitusi**!
+    Aplikasi ini akan memandu Anda memahami cara kerja metode substitusi untuk menyelesaikan sistem persamaan linear dua variabel.
+
+    **Bentuk umum persamaan:** $ax + by = c$
 """)
 
-st.markdown("---")
-st.markdown("### Masukkan Persamaan Anda")
+# Input Persamaan
+st.header("Masukkan Persamaan Anda")
+st.info("💡 Isi koefisien (a, b) dan konstanta (c) untuk kedua persamaan.")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("#### Persamaan 1 ($A_1x + B_1y = C_1$)")
-    a1 = st.number_input("Koefisien $A_1$", value=2.0, key="a1")
-    b1 = st.number_input("Koefisien $B_1$", value=1.0, key="b1")
-    c1 = st.number_input("Konstanta $C_1$", value=5.0, key="c1")
+    st.subheader("Persamaan 1")
+    st.latex("a_1x + b_1y = c_1")
+    a1 = st.number_input("Koefisien a₁ (x)", value=2.0, key="a1")
+    b1 = st.number_input("Koefisien b₁ (y)", value=3.0, key="b1")
+    c1 = st.number_input("Konstanta c₁", value=10.0, key="c1")
 
 with col2:
-    st.markdown("#### Persamaan 2 ($A_2x + B_2y = C_2$)")
-    a2 = st.number_input("Koefisien $A_2$", value=3.0, key="a2")
-    b2 = st.number_input("Koefisien $B_2$", value=-2.0, key="b2")
-    c2 = st.number_input("Konstanta $C_2$", value=4.0, key="c2")
+    st.subheader("Persamaan 2")
+    st.latex("a_2x + b_2y = c_2")
+    a2 = st.number_input("Koefisien a₂ (x)", value=1.0, key="a2")
+    b2 = st.number_input("Koefisien b₂ (y)", value=-1.0, key="b2")
+    c2 = st.number_input("Konstanta c₂", value=0.0, key="c2")
 
 st.markdown("---")
 
-if st.button("Hitung Solusi", type="primary"):
-    st.markdown("## Proses Penyelesaian")
-    with st.expander("Lihat Langkah-langkah Detail", expanded=True):
-        x_final, y_final = solve_spldv_substitusi_streamlit(a1, b1, c1, a2, b2, c2)
+# Pilihan untuk Substitusi
+st.header("Strategi Substitusi")
+st.write("Pilih persamaan dan variabel mana yang ingin Anda isolasi untuk memulai proses substitusi.")
 
-    if x_final is not None and y_final is not None:
+pilihan_persamaan = st.radio(
+    "Pilih persamaan untuk mengisolasi variabel:",
+    options=[1, 2],
+    index=0, # Default pilih Persamaan 1
+    format_func=lambda x: f"Persamaan {x}",
+    key="pilih_persamaan_sub"
+)
+
+pilihan_variabel = st.radio(
+    "Pilih variabel yang akan diisolasi:",
+    options=['x', 'y'],
+    index=0, # Default pilih x
+    key="pilih_variabel_sub"
+)
+
+if st.button("Hitung Solusi!", type="primary"):
+    # Panggil fungsi solver
+    x_sol, y_sol = solve_splvd_substitution(a1, b1, c1, a2, b2, c2, pilihan_persamaan, pilihan_variabel)
+    
+    if x_sol is not None and y_sol is not None:
         st.markdown("---")
-        st.markdown("## 🎉 Solusi Akhir 🎉")
-        st.success(f"Nilai **x = {x_final:.2f}**")
-        st.success(f"Nilai **y = {y_final:.2f}**")
+        st.balloons() # Efek balon saat solusi ditemukan
+        st.subheader("🎉 Solusi Ditemukan!")
+        st.success(f"Nilai **x** = **{x_sol:.4f}**")
+        st.success(f"Nilai **y** = **{y_sol:.4f}**")
+        st.info("Anda bisa mengubah input di atas dan klik 'Hitung Solusi!' lagi untuk mencoba contoh lain.")
+    elif x_sol is None and y_sol is None:
+        st.warning("Perhitungan tidak menghasilkan solusi unik. Silakan periksa koefisien Anda atau coba pilihan strategi substitusi lainnya.")
 
-        st.markdown("---")
-        st.markdown("### Verifikasi Solusi")
-        check1 = a1 * x_final + b1 * y_final
-        check2 = a2 * x_final + b2 * y_final
-        st.markdown(f"**Persamaan 1**: `{a1} * {x_final:.2f} + {b1} * {y_final:.2f} = {check1:.2f}` (Seharusnya `{c1:.2f}`)")
-        st.markdown(f"**Persamaan 2**: `{a2} * {x_final:.2f} + {b2} * {y_final:.2f} = {check2:.2f}` (Seharusnya `{c2:.2f}`)")
-
-        if abs(check1 - c1) < 1e-6 and abs(check2 - c2) < 1e-6: # Toleransi kecil untuk floating point
-            st.balloons()
-            st.success("🎉 Solusi Anda TEPAT! 🎉")
-        else:
-            st.warning("Ada sedikit perbedaan dalam verifikasi. Mungkin karena pembulatan, atau ada kasus khusus.")
+st.markdown("---")
+st.markdown("Dibuat oleh rarayuniaini")
