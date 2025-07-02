@@ -192,4 +192,4 @@ if st.button("Hitung Solusi!", type="primary"):
         st.warning("Perhitungan tidak menghasilkan solusi unik. Silakan periksa koefisien Anda atau coba pilihan strategi substitusi lainnya.")
 
 st.markdown("---")
-st.markdown("Dibuat oleh rarayuniaini")
+st.markdown("Dibuat oleh yuniraraaini")
